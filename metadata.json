@@ -1,0 +1,6 @@
+{
+  "name": "AutoUSA AI - Aukcje USA & Powiadomienia",
+  "description": "Wyszukiwarka najlepszych okazji na auta z USA (Copart, IAAI) w czasie rzeczywistym z analizą AI, kalkulatorem importu, powiadomieniami na +48 530 741 644 i integracją Google Sheets.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
