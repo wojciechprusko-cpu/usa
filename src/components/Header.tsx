@@ -62,8 +62,8 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Quick Metrics - Desktop Only */}
           <div className="hidden lg:flex items-center gap-6 px-4 py-1.5 rounded-lg bg-slate-850/80 border border-slate-750 text-xs">
             <div>
-              <span className="text-slate-400 block text-[11px]">Aktywne okazje</span>
-              <span className="font-bold text-white text-sm tabular-nums">{totalDealsCount} aut</span>
+              <span className="text-slate-400 block text-[11px]">Top Okazje AI (Auta & Motory)</span>
+              <span className="font-bold text-amber-300 text-sm tabular-nums">{totalDealsCount} pojazdów</span>
             </div>
             <div className="h-6 w-px bg-slate-700"></div>
             <div>

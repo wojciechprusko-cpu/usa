@@ -5,8 +5,9 @@ export interface CarAuction {
   make: string;
   model: string;
   trim: string;
+  vehicleType?: 'car' | 'motorcycle'; // Samochód lub Motocykl
   engine: string;
-  engineCapacityCc: number; // e.g. 1998 for 2.0L, 5000 for 5.0L
+  engineCapacityCc: number; // e.g. 1998 for 2.0L, 5000 for 5.0L, 1868 for Harley 114
   fuelType: 'Benzyna' | 'Diesel' | 'Hybryda' | 'Elektryczny';
   mileageMiles: number;
   currentBidUsd: number;
@@ -52,6 +53,7 @@ export interface RemovedAuctionLog {
 }
 
 export interface AiShippingCalculation {
+  vehicleType?: 'car' | 'motorcycle';
   originState: string;
   departurePort: string;
   destinationPort: string;
@@ -77,9 +79,9 @@ export interface ImportCostsBreakdown {
   oceanFreightUsd: number;
   totalUsPortUsd: number;
   portHandlingEur: number;
-  customsDutyRate: number; // 10%
+  customsDutyRate: number; // 10% auta, 6% motocykle
   customsDutyPln: number;
-  exciseTaxRate: number; // 3.1% or 18.6%
+  exciseTaxRate: number; // 3.1% or 18.6% (auta), 0% motocykle
   exciseTaxPln: number;
   vatRate: number; // 19% (Bremerhaven) or 23% (Polska)
   vatPln: number;
@@ -94,6 +96,7 @@ export interface ImportCostsBreakdown {
   totalShippingPln: number;
   totalShippingUsd: number;
   shippingDetails?: AiShippingCalculation;
+  isMotorcycle?: boolean;
 }
 
 export interface NotificationLog {
@@ -126,6 +129,7 @@ export interface SmsGatewayConfig {
 
 export interface FilterState {
   searchQuery: string;
+  vehicleType: 'all' | 'car' | 'motorcycle';
   make: string;
   platform: string;
   minYear: number;
@@ -133,7 +137,7 @@ export interface FilterState {
   maxBidUsd: number;
   minDealScore: number;
   onlyRunAndDrive: boolean;
-  maxExciseOnly: boolean; // tylko silniki do 2.0L (akcyza 3.1%)
+  maxExciseOnly: boolean; // tylko silniki do 2.0L lub motocykle (akcyza <= 3.1% lub 0%)
   sortBy: 'score' | 'profit' | 'endingSoon' | 'priceAsc';
 }
 

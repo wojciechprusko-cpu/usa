@@ -19,10 +19,13 @@ export const AiSearchModal: React.FC<AiSearchModalProps> = ({
   if (!isOpen) return null;
 
   const predefinedQueries = [
+    '🏍️ Wyszukaj najlepsze okazje motocyklowe: Harley-Davidson, BMW GS, Ducati (0% akcyzy w Polsce!)',
+    'Wyselekcjonuj 50 najlepszych okazji z aukcji Copart i IAAI pod kątem zysku w Polsce',
+    'Dlaczego motocykle z USA mają 0% akcyzy w Polsce i jak wyliczyć ich zysk?',
+    'Harley-Davidson Fat Boy 114 z Copart – cło 6%, 0% akcyzy i koszt skrzyni transportowej',
     'Samochody do 2.0L z najniższą akcyzą (3.1%), zyskiem powyżej 30 tys. PLN i tanim transportem morskim',
     'Jaki jest dokładny koszt dostawy z portu w New Jersey do Warszawy i jak go zminimalizować?',
     'Ford Mustang GT 5.0 V8 z portu New Jersey – kalkulacja licytacji, cła i dostawy pod dom',
-    'Dodge Challenger R/T HEMI z certyfikatem Clean Title i opłatami logistycznymi',
     'Elektryki Tesla z zerową akcyzą i uszkodzeniem tylko gradowym'
   ];
 
@@ -75,6 +78,32 @@ export const AiSearchModal: React.FC<AiSearchModalProps> = ({
             <X className="w-5 h-5" />
           </button>
         </div>
+
+        {/* Featured Top 50 Action Button */}
+        <button
+          onClick={() => {
+            const q = 'Wyselekcjonuj 50 najlepszych okazji z aukcji Copart i IAAI pod kątem zysku w Polsce';
+            setPrompt(q);
+            handleAsk(q);
+            onApplyQueryFilter('');
+          }}
+          className="w-full p-3 rounded-xl bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-amber-500/10 hover:from-amber-500/30 hover:to-orange-500/30 border border-amber-500/40 text-left flex items-center justify-between group transition-all"
+        >
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-lg bg-amber-500 text-slate-950 font-black">
+              <Sparkles className="w-4 h-4" />
+            </div>
+            <div>
+              <span className="font-bold text-white text-xs block group-hover:text-amber-300 transition-colors">
+                Wyszukaj 50 Najlepszych Okazji AI z USA
+              </span>
+              <span className="text-[10px] text-slate-400 block">
+                Automatyczny dobór: najwyższy zysk, Run & Drive, akcyza 3.1% lub 0% EV, czysty tytuł
+              </span>
+            </div>
+          </div>
+          <ArrowRight className="w-4 h-4 text-amber-400 group-hover:translate-x-1 transition-transform shrink-0" />
+        </button>
 
         {/* Query Input */}
         <div className="space-y-2">

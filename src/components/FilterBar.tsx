@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Sparkles, SlidersHorizontal, RefreshCw, X, ChevronDown, Check, Zap, RotateCcw } from 'lucide-react';
+import { Search, Sparkles, SlidersHorizontal, RefreshCw, X, ChevronDown, Check, Zap, RotateCcw, Bike, Car } from 'lucide-react';
 import { FilterState } from '../types';
 
 interface FilterBarProps {
@@ -11,7 +11,27 @@ interface FilterBarProps {
   totalResults: number;
 }
 
-const BRANDS = ['Wszystkie', 'Ford', 'Dodge', 'BMW', 'Porsche', 'Tesla', 'Chevrolet', 'Mercedes-Benz'];
+const BRANDS = [
+  'Wszystkie',
+  'Harley-Davidson',
+  'BMW',
+  'Ducati',
+  'Indian',
+  'Yamaha',
+  'Honda',
+  'Kawasaki',
+  'Suzuki',
+  'Ford',
+  'Dodge',
+  'Chevrolet',
+  'Porsche',
+  'Mercedes-Benz',
+  'Audi',
+  'Tesla',
+  'Jeep',
+  'Lexus',
+  'Ram'
+];
 const PLATFORMS = ['Wszystkie portale', 'Copart', 'IAAI', 'Bring a Trailer'];
 
 export const FilterBar: React.FC<FilterBarProps> = ({
@@ -27,6 +47,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
   // Count active non-default filters
   const activeFiltersCount = [
     Boolean(filters.make),
+    filters.vehicleType !== 'all',
     filters.platform !== 'Wszystkie portale',
     filters.onlyRunAndDrive,
     filters.maxExciseOnly,
@@ -37,6 +58,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
     onFilterChange({
       ...filters,
       searchQuery: '',
+      vehicleType: 'all',
       make: '',
       platform: 'Wszystkie portale',
       minYear: 2018,
@@ -62,7 +84,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
             <input
               id="filter-search-input"
               type="text"
-              placeholder="Szukaj auta, modelu, VIN lub numeru lot..."
+              placeholder="Szukaj auta, motocykla, modelu, VIN lub numeru lot..."
               value={filters.searchQuery}
               onChange={(e) => onFilterChange({ ...filters, searchQuery: e.target.value })}
               className="w-full pl-9 pr-8 py-2 bg-slate-800/90 border border-slate-700/80 rounded-xl text-xs sm:text-sm text-white placeholder-slate-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-colors"
@@ -116,12 +138,59 @@ export const FilterBar: React.FC<FilterBarProps> = ({
             onClick={onRefreshFeed}
             disabled={isScanning}
             className="flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-2 bg-slate-800 hover:bg-slate-750 border border-slate-700 rounded-xl text-xs font-medium text-slate-200 hover:text-white transition-colors disabled:opacity-50 shrink-0 active:scale-95"
-            title="Przeskanuj aukcje w USA w poszukiwaniu nowych ofert"
+            title="Przeskanuj bazy Copart i IAAI i wyselekcjonuj 50 najlepszych okazji"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isScanning ? 'animate-spin text-amber-400' : 'text-slate-400'}`} />
-            <span className="hidden sm:inline">{isScanning ? 'Skanowanie...' : 'Skanuj'}</span>
+            <span className="hidden sm:inline">{isScanning ? 'Skanowanie 50...' : 'Skanuj 50 Okazji'}</span>
           </button>
 
+        </div>
+
+        {/* Vehicle Category Selector Bar (All, Cars, Motorcycles) */}
+        <div className="flex items-center gap-2 pt-0.5">
+          <div className="flex items-center p-1 bg-slate-800/90 rounded-xl border border-slate-700/80 gap-1 text-xs">
+            <button
+              onClick={() => onFilterChange({ ...filters, vehicleType: 'all' })}
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-lg font-semibold transition-all active:scale-95 ${
+                filters.vehicleType === 'all'
+                  ? 'bg-amber-500 text-slate-950 font-bold shadow-sm'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-750'
+              }`}
+            >
+              <span>Wszystkie pojazdy</span>
+            </button>
+
+            <button
+              onClick={() => onFilterChange({ ...filters, vehicleType: 'car' })}
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-lg font-semibold transition-all active:scale-95 ${
+                filters.vehicleType === 'car'
+                  ? 'bg-amber-500 text-slate-950 font-bold shadow-sm'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-750'
+              }`}
+            >
+              <Car className="w-3.5 h-3.5" />
+              <span>Samochody</span>
+            </button>
+
+            <button
+              onClick={() => onFilterChange({ ...filters, vehicleType: 'motorcycle' })}
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-lg font-semibold transition-all active:scale-95 ${
+                filters.vehicleType === 'motorcycle'
+                  ? 'bg-emerald-500 text-slate-950 font-black shadow-sm'
+                  : 'text-emerald-400 hover:text-emerald-300 hover:bg-emerald-950/40'
+              }`}
+            >
+              <Bike className="w-3.5 h-3.5" />
+              <span>Motocykle</span>
+              <span className={`text-[10px] px-1.5 py-0.2 rounded font-black uppercase tracking-wider ${
+                filters.vehicleType === 'motorcycle'
+                  ? 'bg-slate-950 text-emerald-300'
+                  : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+              }`}>
+                0% Akcyzy
+              </span>
+            </button>
+          </div>
         </div>
 
         {/* Brand horizontal scroll carousel (Mobile & Desktop) */}

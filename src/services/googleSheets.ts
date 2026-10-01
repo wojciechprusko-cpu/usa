@@ -92,7 +92,7 @@ export async function createOrUpdateCarSheet(
     const calc = calculateImportCosts(car);
     return [
       now,
-      `${car.make} ${car.model} ${car.trim}`,
+      `${car.vehicleType === 'motorcycle' ? '🏍️ Motocykl' : '🚗 Samochód'} - ${car.make} ${car.model} ${car.trim}`,
       car.year,
       car.vin,
       car.auctionPlatform,

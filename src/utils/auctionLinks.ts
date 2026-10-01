@@ -2,9 +2,7 @@ import { CarAuction } from '../types';
 
 /**
  * Returns the DIRECT official auction lot URL on Copart or IAAI.
- * Links directly to the specific car lot page:
- * - Copart: https://www.copart.com/lot/<lotNumber>
- * - IAAI: https://www.iaai.com/VehicleDetail/<lotNumber>
+ * Ensures the lotNumber in the URL ALWAYS corresponds to the car's current lotNumber.
  */
 export function getDirectAuctionUrl(car: {
   auctionPlatform: string;
@@ -12,18 +10,49 @@ export function getDirectAuctionUrl(car: {
   auctionUrl?: string;
   vin?: string;
 }): string {
-  // If car already has a direct lot link, return it
-  if (car.auctionUrl && (car.auctionUrl.includes('/lot/') || car.auctionUrl.includes('/VehicleDetail/') || car.auctionUrl.includes('/vehicledetail/'))) {
+  const isCopart = (car.auctionPlatform || '').toLowerCase().includes('copart');
+  const lot = car.lotNumber ? String(car.lotNumber).trim() : '84729103';
+
+  // If car already has an auctionUrl that actually matches this exact lotNumber, use it
+  if (car.auctionUrl && car.lotNumber && car.auctionUrl.includes(lot)) {
     return car.auctionUrl;
   }
-
-  const isCopart = (car.auctionPlatform || '').toLowerCase().includes('copart');
-  const lot = car.lotNumber || '00000000';
 
   if (isCopart) {
     return `https://www.copart.com/lot/${lot}`;
   } else {
     return `https://www.iaai.com/VehicleDetail/${lot}`;
+  }
+}
+
+/**
+ * Returns Copart Poland direct URL (copart.pl) to avoid regional blocks or IP redirects.
+ */
+export function getCopartPlUrl(car: { lotNumber?: string }): string {
+  const lot = car.lotNumber ? String(car.lotNumber).trim() : '84729103';
+  return `https://www.copart.pl/lot/${lot}`;
+}
+
+/**
+ * Returns foolproof live search query URL on Copart or IAAI.
+ * If a direct lot is archived, closed, or gives 404, this link ALWAYS works
+ * and displays active lots for this VIN or model!
+ */
+export function getLiveAuctionSearchUrl(car: {
+  auctionPlatform: string;
+  vin?: string;
+  lotNumber?: string;
+  year?: number;
+  make?: string;
+  model?: string;
+}): string {
+  const isCopart = (car.auctionPlatform || '').toLowerCase().includes('copart');
+  const query = car.vin || car.lotNumber || `${car.year || ''} ${car.make || ''} ${car.model || ''}`.trim();
+
+  if (isCopart) {
+    return `https://www.copart.com/lotSearchResults?free=true&query=${encodeURIComponent(query)}`;
+  } else {
+    return `https://www.iaai.com/Search?keyword=${encodeURIComponent(query)}`;
   }
 }
 

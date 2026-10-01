@@ -15,7 +15,8 @@ import {
   Anchor,
   Navigation,
   Clock,
-  AlertCircle
+  AlertCircle,
+  Bike
 } from 'lucide-react';
 import { CarAuction, AiShippingCalculation } from '../types';
 import { calculateImportCosts, formatPln, formatUsd, DEFAULT_USD_PLN } from '../utils/calculator';
@@ -63,6 +64,7 @@ export const ImportCalculatorModal: React.FC<ImportCalculatorModalProps> = ({
           make: car.make,
           model: car.model,
           trim: car.trim,
+          vehicleType: car.vehicleType || 'car',
           locationState: car.locationState,
           departurePort: car.departurePort,
           driveCondition: car.driveCondition,
@@ -117,12 +119,17 @@ export const ImportCalculatorModal: React.FC<ImportCalculatorModalProps> = ({
         <div className="flex items-start justify-between pb-3 border-b border-slate-800">
           <div>
             <div className="flex items-center gap-2">
-              <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/30">
-                <Calculator className="w-5 h-5" />
+              <div className={`p-2 rounded-xl ${calc.isMotorcycle ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' : 'bg-amber-500/10 text-amber-400 border border-amber-500/30'}`}>
+                {calc.isMotorcycle ? <Bike className="w-5 h-5" /> : <Calculator className="w-5 h-5" />}
               </div>
               <div>
                 <h2 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
                   <span>Kalkulator Importu z USA do Polski</span>
+                  {calc.isMotorcycle && (
+                    <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-500 text-slate-950 uppercase tracking-wider">
+                      Motocykl · 0% Akcyzy
+                    </span>
+                  )}
                 </h2>
                 <p className="text-[11px] sm:text-xs text-slate-400">
                   {car.year} {car.make} {car.model} {car.trim} (VIN: <span className="font-mono text-slate-300">{car.vin}</span>)
@@ -137,6 +144,21 @@ export const ImportCalculatorModal: React.FC<ImportCalculatorModalProps> = ({
             <X className="w-5 h-5" />
           </button>
         </div>
+
+        {/* Motorcycle Legal Advantage Banner */}
+        {calc.isMotorcycle && (
+          <div className="p-3 bg-emerald-950/70 border border-emerald-500/40 rounded-xl flex items-start gap-2.5 text-xs text-emerald-200">
+            <Bike className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+            <div>
+              <strong className="text-emerald-300 font-bold block text-xs">
+                🏍️ Kategoria: Motocykl z USA (Zwolniony z Akcyzy w Polsce!)
+              </strong>
+              <p className="text-[11px] text-emerald-200/90 leading-relaxed mt-0.5">
+                Zgodnie z polską ustawą o podatku akcyzowym, <strong>motocykle mają 0% akcyzy</strong> (zamiast 3.1% lub 18.6% jak w samochodach). Cło celne UE wynosi tylko <strong>6%</strong>, a transport morski w skrzyni transportowej (crating) to zaledwie ~$650.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* 1. Default Option Inputs */}
         <div className="space-y-1.5">
@@ -466,15 +488,19 @@ export const ImportCalculatorModal: React.FC<ImportCalculatorModalProps> = ({
             </div>
 
             <div className="p-2.5 flex items-center justify-between bg-slate-850/60">
-              <span className="text-slate-300">6. Cło celne UE (10% od wartości CIF)</span>
+              <span className="text-slate-300">
+                6. Cło celne UE ({calc.isMotorcycle ? '6% dla motocykli' : '10% od wartości CIF'})
+              </span>
               <span className="font-semibold text-slate-200">{formatPln(calc.customsDutyPln)}</span>
             </div>
 
             <div className="p-2.5 flex items-center justify-between bg-slate-850/60">
               <span className="text-slate-300">
-                7. Akcyza w Polsce ({car.fuelType === 'Elektryczny' ? '0% EV' : calc.exciseTaxRate === 0.031 ? '3.1% (silnik ≤ 2.0L)' : '18.6% (silnik > 2.0L)'})
+                7. Akcyza w Polsce ({calc.isMotorcycle ? '0% - Zwolnienie dla motocykli!' : car.fuelType === 'Elektryczny' ? '0% EV' : calc.exciseTaxRate === 0.031 ? '3.1% (silnik ≤ 2.0L)' : '18.6% (silnik > 2.0L)'})
               </span>
-              <span className="font-semibold text-slate-200">{formatPln(calc.exciseTaxPln)}</span>
+              <span className={`font-semibold ${calc.isMotorcycle ? 'text-emerald-400' : 'text-slate-200'}`}>
+                {formatPln(calc.exciseTaxPln)}
+              </span>
             </div>
 
             <div className="p-2.5 flex items-center justify-between bg-slate-850/60">
@@ -486,7 +512,9 @@ export const ImportCalculatorModal: React.FC<ImportCalculatorModalProps> = ({
             <div className="p-2.5 flex items-center justify-between bg-emerald-500/5">
               <span className="text-emerald-200 flex items-center gap-1.5">
                 <Truck className="w-3 h-3 text-emerald-400" />
-                <span>9. Transport lawetą pod dom do {destinationCity} [AI Dostawa]</span>
+                <span>
+                  9. Transport {calc.isMotorcycle ? 'busem z pasami mocującymi' : 'lawetą'} pod dom do {destinationCity} [AI Dostawa]
+                </span>
               </span>
               <span className="font-semibold text-emerald-300">{formatPln(calc.transportToPolandPln)}</span>
             </div>
@@ -497,7 +525,9 @@ export const ImportCalculatorModal: React.FC<ImportCalculatorModalProps> = ({
             </div>
 
             <div className="p-2.5 flex items-center justify-between">
-              <span className="text-slate-300">11. Adaptacja EU (światła, radio, badanie techniczne)</span>
+              <span className="text-slate-300">
+                11. {calc.isMotorcycle ? 'Badanie techniczne motocykla i adaptacja świateł' : 'Adaptacja EU (światła, radio, badanie techniczne)'}
+              </span>
               <span className="font-semibold text-white">{formatPln(calc.adaptationPln)}</span>
             </div>
 

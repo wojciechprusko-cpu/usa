@@ -42,7 +42,7 @@ export const AiLiveRadarBar: React.FC<AiLiveRadarBarProps> = ({
             <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${isAutoLoopActive ? 'bg-emerald-500' : 'bg-slate-500'}`}></span>
           </span>
           <div className="flex items-center gap-1.5 text-xs">
-            <span className="font-bold text-amber-400">AI Radar</span>
+            <span className="font-bold text-amber-400">AI Radar Top 50</span>
             <span className="text-slate-400">·</span>
             <span className="text-emerald-400 font-bold tabular-nums">{activeCount} aut</span>
             {removedCount > 0 && (
@@ -107,7 +107,7 @@ export const AiLiveRadarBar: React.FC<AiLiveRadarBarProps> = ({
             <div className="flex items-center gap-2">
               <span className="text-xs font-black uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
                 <Sparkles className="w-3.5 h-3.5" />
-                <span>AI Live Engine • Aktualizacja co 5 sekund</span>
+                <span>AI Live Engine • Selekcja 50 Najlepszych Okazji (Copart & IAAI)</span>
               </span>
               <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
                 isAutoLoopActive 
@@ -119,9 +119,9 @@ export const AiLiveRadarBar: React.FC<AiLiveRadarBarProps> = ({
             </div>
 
             <div className="text-xs text-slate-300 flex items-center gap-2 mt-0.5">
-              <span className="font-semibold text-white">Ostatnia operacja AI:</span>
+              <span className="font-semibold text-white">Status AI:</span>
               <span className="text-amber-200/90 truncate max-w-xs sm:max-w-md">
-                {lastAiAction || 'Monitorowanie aukcji Copart i IAAI w czasie rzeczywistym...'}
+                {lastAiAction || 'Wyszukiwanie i monitorowanie 50 najlepszych okazji z aukcji w USA...'}
               </span>
             </div>
           </div>
@@ -135,8 +135,8 @@ export const AiLiveRadarBar: React.FC<AiLiveRadarBarProps> = ({
             
             {/* Active offers badge */}
             <div className="bg-slate-800/90 border border-slate-700/80 px-2.5 py-1.5 rounded-lg flex items-center gap-1.5">
-              <span className="text-slate-400 text-[11px]">Aktywne:</span>
-              <strong className="text-emerald-400 font-bold">{activeCount}</strong>
+              <span className="text-slate-400 text-[11px]">Top 50 Okazji:</span>
+              <strong className="text-emerald-400 font-bold">{activeCount} aut</strong>
             </div>
 
             {/* Removed offers badge (clickable) */}

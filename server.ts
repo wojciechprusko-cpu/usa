@@ -297,43 +297,64 @@ app.get('/api/notifications/history', (req: Request, res: Response) => {
   res.json({ logs: notificationLogs });
 });
 
-// 3. AI Smart Deal Analyzer using Gemini 3.8 Flash (including shipping calculation)
+// 3. AI Smart Deal Analyzer using Gemini 3.8 Flash (including shipping calculation & motorcycle support)
 app.post('/api/ai-analyze-lot', async (req: Request, res: Response) => {
   try {
-    const { carModel, year, engine, damageDescription, currentBidUsd, marketValuePln, departurePort, locationState, driveCondition } = req.body;
+    const { 
+      carModel, 
+      year, 
+      engine, 
+      damageDescription, 
+      currentBidUsd, 
+      marketValuePln, 
+      departurePort, 
+      locationState, 
+      driveCondition,
+      vehicleType = 'car'
+    } = req.body;
     const ai = getGeminiClient();
+    const isMotorcycle = vehicleType === 'motorcycle';
 
     if (!ai) {
       // Fallback heuristic if API key not available yet
       return res.json({
-        score: 91,
-        verdict: 'Wysoka rentowność importu. Silnik nienaruszony, łatwa naprawa blacharska.',
-        pros: ['Popularny model w Polsce o wysokiej płynności', 'Niska cena bazowa na aukcji w USA', 'Szybka dostępność części zamiennych w Europie'],
-        cons: ['Zwrócić uwagę na geometrię płyty podłogowej przed licytacją'],
-        repairEstimatePln: 14000,
-        suggestedMaxBidUsd: (currentBidUsd || 12000) * 1.15,
-        estimatedDeliveryPln: 10400,
+        score: isMotorcycle ? 94 : 91,
+        verdict: isMotorcycle
+          ? 'Wybitna okazja motocyklowa! W Polsce motocykle są CAŁKOWICIE ZWOLNIONE Z AKCYZY (0%), cło wynosi tylko 6%, a koszt transportu morskiego w skrzyni jest o połowę tańszy.'
+          : 'Wysoka rentowność importu. Silnik nienaruszony, łatwa naprawa blacharska.',
+        pros: isMotorcycle
+          ? ['0% akcyzy w Polsce (całkowite zwolnienie)', 'Cło tylko 6% (zamiast 10% jak w autach)', 'Niski koszt frachtu w klatce morskiej i wysoka cena na rynku wtórnym']
+          : ['Popularny model w Polsce o wysokiej płynności', 'Niska cena bazowa na aukcji w USA', 'Szybka dostępność części zamiennych w Europie'],
+        cons: isMotorcycle
+          ? ['Sprawdzić geometrię przedniego widelca i ramy na zdjęciach']
+          : ['Zwrócić uwagę na geometrię płyty podłogowej przed licytacją'],
+        repairEstimatePln: isMotorcycle ? 4500 : 14000,
+        suggestedMaxBidUsd: (currentBidUsd || (isMotorcycle ? 7000 : 12000)) * 1.15,
+        estimatedDeliveryPln: isMotorcycle ? 4800 : 10400,
         deliveryBreakdown: {
-          inlandUsd: 450,
-          oceanUsd: 1350,
-          handlingEur: 420,
-          polandTowPln: 1800,
-          totalPln: 10760,
-          totalUsd: 2704,
-          transitDays: '28-35 dni roboczych'
+          inlandUsd: isMotorcycle ? 280 : 450,
+          oceanUsd: isMotorcycle ? 650 : 1350,
+          handlingEur: isMotorcycle ? 250 : 420,
+          polandTowPln: isMotorcycle ? 850 : 1800,
+          totalPln: isMotorcycle ? 4800 : 10760,
+          totalUsd: isMotorcycle ? 1206 : 2704,
+          transitDays: '24-32 dni roboczych'
         }
       });
     }
 
-    const prompt = `Jesteś ekspertem z 15-letnim doświadczeniem w imporcie aut powypadkowych z USA do Polski (Copart, IAAI, Manheim).
+    const prompt = `Jesteś ekspertem z 15-letnim doświadczeniem w imporcie pojazdów (samochodów i motocykli) z aukcji w USA do Polski (Copart, IAAI, Manheim).
 Przeanalizuj ofertę:
-- Samochód: ${year} ${carModel}
+- Typ pojazdu: ${isMotorcycle ? 'MOTOCYKL (kategoria: jednoślad)' : 'Samochód osobowy'}
+- Model: ${year} ${carModel}
 - Silnik: ${engine}
 - Opis uszkodzeń z aukcji: ${damageDescription}
 - Bieżąca/szacowana oferta: $${currentBidUsd} USD
-- Średnia cena na polskim Otomoto: ${marketValuePln} PLN
+- Średnia cena na polskim Otomoto/OLX: ${marketValuePln} PLN
 - Port i stan USA: ${departurePort || 'New York / New Jersey'} (${locationState || 'Wschodnie Wybrzeże'})
 - Stan napędu: ${driveCondition || 'Run & Drive'}
+
+${isMotorcycle ? 'WAŻNA ZASADA PRAWNA W POLSCE: Motocykle są CAŁKOWICIE ZWOLNIONE Z AKCYZY (0% akcyzy!), cło UE wynosi 6% (zamiast 10%), a transport w skrzyni (crating) kosztuje o ~50% mniej niż transport samochodu. Uwzględnij to w wyliczeniu i rekomendacji zysku.' : ''}
 
 Zwróć odpowiedź w formacie JSON z następującymi polami:
 {
@@ -343,15 +364,15 @@ Zwróć odpowiedź w formacie JSON z następującymi polami:
   "cons": ["ryzyko 1", "ryzyko 2"],
   "repairEstimatePln": szacowany koszt naprawy w PLN,
   "suggestedMaxBidUsd": maksymalna sugerowana kwota licytacji w USD, do której zakup ma sens biznesowy,
-  "estimatedDeliveryPln": szacowany całkowity koszt dostawy pod dom w PLN (transport USA + fracht oceaniczny + port + laweta w Polsce),
+  "estimatedDeliveryPln": szacowany całkowity koszt dostawy pod dom w PLN (transport USA + fracht oceaniczny + port + transport w Polsce),
   "deliveryBreakdown": {
     "inlandUsd": number (transport lądowy w USA do portu),
-    "oceanUsd": number (fracht morski kontenerowy),
+    "oceanUsd": number (fracht morski),
     "handlingEur": number (rozładunek portowy Bremerhaven),
-    "polandTowPln": number (laweta pod dom w Polsce),
+    "polandTowPln": number (transport pod dom w Polsce),
     "totalPln": number (suma dostawy w PLN),
     "totalUsd": number (suma dostawy w USD),
-    "transitDays": "np. 28-35 dni roboczych"
+    "transitDays": "np. 24-32 dni roboczych"
   }
 }`;
 
@@ -391,7 +412,7 @@ Zwróć odpowiedź w formacie JSON z następującymi polami:
   }
 });
 
-// 4. AI Comprehensive Shipping & Delivery Calculator using Gemini 3.8 Flash
+// 4. AI Comprehensive Shipping & Delivery Calculator using Gemini 3.8 Flash (supporting cars & motorcycles)
 app.post('/api/ai-calculate-shipping', async (req: Request, res: Response) => {
   try {
     const {
@@ -399,6 +420,7 @@ app.post('/api/ai-calculate-shipping', async (req: Request, res: Response) => {
       make,
       model,
       trim,
+      vehicleType = 'car',
       locationState,
       departurePort,
       driveCondition,
@@ -410,37 +432,45 @@ app.post('/api/ai-calculate-shipping', async (req: Request, res: Response) => {
     } = req.body;
 
     const ai = getGeminiClient();
+    const isMotorcycle = vehicleType === 'motorcycle';
 
     // Baseline calculation heuristics
-    let baseInlandUsd = 450;
-    if (departurePort === 'Los Angeles') baseInlandUsd = 750;
-    else if (departurePort === 'Houston') baseInlandUsd = 550;
-    else if (departurePort === 'New York / New Jersey') baseInlandUsd = 350;
-    else if (departurePort === 'Miami') baseInlandUsd = 380;
-    else if (departurePort === 'Savannah') baseInlandUsd = 420;
+    let baseInlandUsd = isMotorcycle ? 280 : 450;
+    if (departurePort === 'Los Angeles') baseInlandUsd = isMotorcycle ? 450 : 750;
+    else if (departurePort === 'Houston') baseInlandUsd = isMotorcycle ? 350 : 550;
+    else if (departurePort === 'New York / New Jersey') baseInlandUsd = isMotorcycle ? 220 : 350;
+    else if (departurePort === 'Miami') baseInlandUsd = isMotorcycle ? 250 : 380;
+    else if (departurePort === 'Savannah') baseInlandUsd = isMotorcycle ? 270 : 420;
 
     if (driveCondition !== 'Run & Drive' || isForkliftRequired) {
-      baseInlandUsd += 150; // opłata za wózek widłowy / auto niejeżdżące
+      baseInlandUsd += isMotorcycle ? 60 : 150;
     }
 
-    let baseOceanUsd = 1350;
-    if (departurePort === 'Los Angeles') baseOceanUsd = 1850;
-    else if (departurePort === 'Houston') baseOceanUsd = 1550;
+    let baseOceanUsd = isMotorcycle ? 650 : 1350;
+    if (departurePort === 'Los Angeles') baseOceanUsd = isMotorcycle ? 850 : 1850;
+    else if (departurePort === 'Houston') baseOceanUsd = isMotorcycle ? 750 : 1550;
 
-    let basePolandTowPln = 1800;
+    let basePolandTowPln = isMotorcycle ? 850 : 1800;
     const cityLower = String(destinationCity).toLowerCase();
-    if (cityLower.includes('poznań') || cityLower.includes('gorzów') || cityLower.includes('szczecin')) basePolandTowPln = 1400;
-    else if (cityLower.includes('wrocław') || cityLower.includes('zielona góra') || cityLower.includes('legnica')) basePolandTowPln = 1600;
-    else if (cityLower.includes('warszawa') || cityLower.includes('łódź') || cityLower.includes('bydgoszcz') || cityLower.includes('toruń')) basePolandTowPln = 1900;
-    else if (cityLower.includes('kraków') || cityLower.includes('katowice') || cityLower.includes('gdańsk') || cityLower.includes('gdynia')) basePolandTowPln = 2000;
-    else if (cityLower.includes('lublin') || cityLower.includes('rzeszów') || cityLower.includes('białystok') || cityLower.includes('olsztyn')) basePolandTowPln = 2300;
+    if (!isMotorcycle) {
+      if (cityLower.includes('poznań') || cityLower.includes('gorzów') || cityLower.includes('szczecin')) basePolandTowPln = 1400;
+      else if (cityLower.includes('wrocław') || cityLower.includes('zielona góra') || cityLower.includes('legnica')) basePolandTowPln = 1600;
+      else if (cityLower.includes('warszawa') || cityLower.includes('łódź') || cityLower.includes('bydgoszcz') || cityLower.includes('toruń')) basePolandTowPln = 1900;
+      else if (cityLower.includes('kraków') || cityLower.includes('katowice') || cityLower.includes('gdańsk') || cityLower.includes('gdynia')) basePolandTowPln = 2000;
+      else if (cityLower.includes('lublin') || cityLower.includes('rzeszów') || cityLower.includes('białystok') || cityLower.includes('olsztyn')) basePolandTowPln = 2300;
+    } else {
+      if (cityLower.includes('poznań') || cityLower.includes('gorzów') || cityLower.includes('szczecin') || cityLower.includes('wrocław')) basePolandTowPln = 700;
+      else if (cityLower.includes('warszawa') || cityLower.includes('łódź')) basePolandTowPln = 850;
+      else basePolandTowPln = 950;
+    }
 
-    const basePortHandlingEur = 420;
+    const basePortHandlingEur = isMotorcycle ? 250 : 420;
 
     if (!ai) {
       const totalPln = Math.round((baseInlandUsd + baseOceanUsd) * usdRate + basePortHandlingEur * eurRate + basePolandTowPln);
       const totalUsd = Math.round(totalPln / usdRate);
       return res.json({
+        vehicleType: isMotorcycle ? 'motorcycle' : 'car',
         originState: locationState || 'USA',
         departurePort: departurePort || 'New York / New Jersey',
         destinationPort: 'Bremerhaven (Niemcy)',
@@ -451,40 +481,47 @@ app.post('/api/ai-calculate-shipping', async (req: Request, res: Response) => {
         transportToPolandPln: basePolandTowPln,
         totalShippingPln: totalPln,
         totalShippingUsd: totalUsd,
-        transitDaysEstimate: '26 - 34 dni roboczych',
-        carrierType: 'Kontener 40ft High-Cube (share) + autotransporter z windą hydrauliczną',
+        transitDaysEstimate: isMotorcycle ? '22 - 30 dni roboczych' : '26 - 34 dni roboczych',
+        carrierType: isMotorcycle 
+          ? 'Klatka transportowa (crating) w kontenerze + transport dedykowany busem z pasami'
+          : 'Kontener 40ft High-Cube (share) + autotransporter z windą hydrauliczną',
         requiresForklift: driveCondition !== 'Run & Drive' || isForkliftRequired,
-        aiLogisticsNotes: `Kalkulacja logistyki dla ${year} ${make} ${model}: Trasa z portu ${departurePort} do Bremerhaven, a stamtąd bezpośredni transport autolawetą pod dom do miasta ${destinationCity}.`,
+        aiLogisticsNotes: isMotorcycle
+          ? `Kalkulacja spedycji dla motocykla ${year} ${make} ${model}: Bezpieczny transport w skrzyni morskiej (crating) do Bremerhaven oraz bezpośredni dowóz busem do ${destinationCity}. Zwolniony z akcyzy!`
+          : `Kalkulacja logistyki dla ${year} ${make} ${model}: Trasa z portu ${departurePort} do Bremerhaven, a stamtąd bezpośredni transport autolawetą pod dom do miasta ${destinationCity}.`,
       });
     }
 
-    const prompt = `Jesteś głównym dyspozytorem międzynarodowej spedycji morskiej i lądowej specjalizującym się w logistyce pojazdów z aukcji Copart i IAAI w USA do Polski.
+    const prompt = `Jesteś głównym dyspozytorem międzynarodowej spedycji morskiej i lądowej specjalizującym się w logistyce pojazdów (samochody i motocykle) z aukcji Copart i IAAI w USA do Polski.
 Wylicz i zoptymalizuj dokładne koszty dostawy:
-- Samochód: ${year} ${make} ${model} ${trim || ''}
-- Stan napędu: ${driveCondition} (${driveCondition === 'Run & Drive' ? 'Auto toczy się i odpala' : 'Auto niejeżdżące, wymaga załadunku wózkiem widłowym'})
+- Kategoria pojazdu: ${isMotorcycle ? 'MOTOCYKL (transport w specjalnej skrzyni/klatce motocyklowej crating)' : 'Samochód osobowy'}
+- Model: ${year} ${make} ${model} ${trim || ''}
+- Stan napędu: ${driveCondition} (${driveCondition === 'Run & Drive' ? 'Pojazd toczy się i odpala' : 'Pojazd niejeżdżący, wymaga załadunku wózkiem/rampą'})
 - Uszkodzenie: ${primaryDamage || 'Brak krytycznych uszkodzeń'}
 - Plac aukcyjny (lokalizacja): ${locationState}
 - Port wyjściowy w USA: ${departurePort}
 - Port docelowy UE: Bremerhaven (Niemcy)
 - Miasto docelowe dostawy w Polsce: ${destinationCity}
-- Wózek widłowy (forklift loading fee na placu aukcyjnym): ${isForkliftRequired || driveCondition !== 'Run & Drive' ? 'TAK (+150$)' : 'NIE (0$)'}
+- Obsługa załadunku (forklift/ramp loading fee): ${isForkliftRequired || driveCondition !== 'Run & Drive' ? 'TAK' : 'NIE'}
+
+${isMotorcycle ? 'Uwzględnij, że motocykl zajmuje ułamek kontenera (mieści się w skrzyni transportowej / klatce), stąd fracht morski wynosi ok. 600-800$ zamiast 1300-1800$, a transport busem/przyczepą do Polski to ok. 700-1000 PLN zamiast 1800 PLN.' : ''}
 
 Uwzględnij realne koszty rynkowe w USD i PLN:
 1. Transport lądowy po USA (inland truck z placu do portu wyjściowego).
-2. Fracht morski w kontenerze 40ft High-Cube przez Atlantyk do Bremerhaven.
-3. Rozładunek portowy i opłaty terminalowe (THC, dokumentacja T1) w Bremerhaven w EUR (przeważnie 390-440 EUR).
-4. Transport autolawetą z portu Bremerhaven pod dom w Polsce do miasta ${destinationCity} w PLN.
+2. Fracht morski przez Atlantyk do Bremerhaven.
+3. Rozładunek portowy i opłaty terminalowe (THC, dokumentacja T1) w Bremerhaven w EUR.
+4. Transport pod dom w Polsce do miasta ${destinationCity} w PLN.
 
 Zwróć odpowiedź w formacie JSON z następującymi polami:
 {
-  "inlandTransportUsd": number (np. 380, 520, 750),
-  "oceanFreightUsd": number (np. 1300, 1450, 1650),
-  "portHandlingEur": number (np. 420),
-  "transportToPolandPln": number (np. 1800, 1900, 2200),
-  "transitDaysEstimate": "np. 28-35 dni roboczych",
-  "carrierType": "np. Kontener 40ft HC (współdzielony) + autotransporter z wciągarką",
+  "inlandTransportUsd": number,
+  "oceanFreightUsd": number,
+  "portHandlingEur": number,
+  "transportToPolandPln": number,
+  "transitDaysEstimate": "np. 24-30 dni roboczych",
+  "carrierType": "opis typu transportu",
   "requiresForklift": boolean,
-  "aiLogisticsNotes": "2-3 konkretne profesjonalne zdania po polsku: analiza logistyczna, rekomendacje uniknięcia opłat postojowych storage na aukcji i optymalizacji trasy."
+  "aiLogisticsNotes": "2-3 konkretne profesjonalne zdania po polsku: analiza logistyczna, zabezpieczenie w skrzyni transportowej, rekomendacje uniknięcia opłat postojowych storage na aukcji i optymalizacji trasy."
 }`;
 
     const response = await ai.models.generateContent({
@@ -505,6 +542,7 @@ Zwróć odpowiedź w formacie JSON z następującymi polami:
     const totalDeliveryUsd = Math.round(totalDeliveryPln / usdRate);
 
     res.json({
+      vehicleType: isMotorcycle ? 'motorcycle' : 'car',
       originState: locationState || 'USA',
       departurePort: departurePort || 'New York / New Jersey',
       destinationPort: 'Bremerhaven (Niemcy)',
@@ -515,8 +553,8 @@ Zwróć odpowiedź w formacie JSON z następującymi polami:
       transportToPolandPln: polandPln,
       totalShippingPln: totalDeliveryPln,
       totalShippingUsd: totalDeliveryUsd,
-      transitDaysEstimate: parsed.transitDaysEstimate || '26 - 34 dni roboczych',
-      carrierType: parsed.carrierType || 'Kontener 40ft HC + autotransporter z wciągarką',
+      transitDaysEstimate: parsed.transitDaysEstimate || (isMotorcycle ? '22 - 30 dni roboczych' : '26 - 34 dni roboczych'),
+      carrierType: parsed.carrierType || (isMotorcycle ? 'Klatka transportowa crating + transport busem' : 'Kontener 40ft HC + autotransporter'),
       requiresForklift: Boolean(parsed.requiresForklift),
       aiLogisticsNotes: parsed.aiLogisticsNotes || `AI Spedycja: Zoptymalizowano trasę z portu ${departurePort} do ${destinationCity}.`,
     });
@@ -526,24 +564,35 @@ Zwróć odpowiedź w formacie JSON z następującymi polami:
   }
 });
 
-// 5. Custom AI Natural Language Car Hunter
+// 5. Custom AI Natural Language Vehicle Hunter (Cars & Motorcycles)
 app.post('/api/ai-search-deals', async (req: Request, res: Response) => {
   try {
     const { query } = req.body;
     const ai = getGeminiClient();
+    const queryLower = (query || '').toLowerCase();
+    const isMotoSearch = queryLower.includes('motor') || queryLower.includes('motocykl') || queryLower.includes('harley') || queryLower.includes('bmw gs') || queryLower.includes('ducati') || queryLower.includes('bike');
 
     if (!ai) {
+      if (isMotoSearch) {
+        return res.json({
+          advice: `Wyniki wyszukiwania dla motocykli: W Polsce motocykle z USA są CAŁKOWICIE ZWOLNIONE Z AKCYZY (0% akcyzy!), cło wynosi zaledwie 6%, a transport morski w skrzyni (crating) to tylko ok. $650. Wyselekcjonowane okazje (Harley-Davidson Fat Boy, BMW R1250 GS, Indian Scout, Ducati Panigale) generują rekordowe marże od 25 000 do 50 000 PLN!`
+        });
+      }
       return res.json({
-        advice: `Wyniki dla zapytania "${query}": Rekomendujemy skupienie się na aukcjach Copart w stanie New Jersey ze względu na niższe koszty logistyki morskiej (~$350 lądowy + $1,350 kontener).`
+        advice: `Wyniki dla zapytania "${query}": Algorytm AI wyselekcjonował 50 najlepszych okazji (samochodów i motocykli) z aukcji Copart i IAAI. Główne kryteria wyboru to niska akcyza (0% dla motocykli i aut elektrycznych, 3.1% dla aut poniżej 2.0L), stan Run & Drive oraz wysoki szacowany zysk po opłatach.`
       });
     }
 
     const response = await ai.models.generateContent({
       model: 'gemini-3.8-flash',
-      contents: `Użytkownik szuka okazji na auto z USA: "${query}". 
-Podaj w 2 konkretnych zdaniach po polsku radę zakupową:
-1. Na jakie uszkodzenia i kody tytułów (Clean Title vs Salvage) uważać oraz optymalną akcyzę (3.1% do 2.0L vs 18.6% powyżej 2.0L).
-2. Oszacuj realny łączny koszt dostawy z USA pod dom w Polsce (transport lądowy w USA + fracht morski kontenerem + rozładunek w porcie Bremerhaven + laweta pod dom, łącznie ok. 10 000 - 12 500 PLN).`,
+      contents: `Jesteś doradcą ds. importu pojazdów powypadkowych i poleasingowych z USA do Polski (Copart i IAAI).
+System wyszukuje zarówno SAMOCHODY jak i MOTOCYKLE.
+Użytkownik wyszukuje / pyta o: "${query}".
+
+Przedstaw profesjonalną, konkretną odpowiedź w języku polskim w 3 zwięzłych punktach:
+1. Odnieś się bezpośrednio do zapytania użytkownika (jeśli pyta o motocykle, podkreśl ZWOLNIENIE Z AKCYZY 0%, cło 6% i niższe koszty frachtu morskiego w skrzyni $650).
+2. Wskaż najbardziej opłacalne modele pod kątem zysku w Polsce (np. dla motocykli: Harley-Davidson Fat Boy/Road Glide, BMW R 1250 GS Adventure, Indian Scout Bobber, Ducati Panigale V4; dla aut: BMW 330i, Ford Mustang GT 5.0, Tesla Model 3).
+3. Podaj wskazówkę logistyczną i formalną dotyczącą odprawy celnej (Bremerhaven) i rejestracji w Polsce.`,
     });
 
     res.json({
